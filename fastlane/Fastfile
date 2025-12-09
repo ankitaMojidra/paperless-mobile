@@ -4,6 +4,7 @@ platform :android do
   desc "Build unsigned release APK"
   lane :build_unsigned_apk do
     sh("flutter pub get")
+    sh("flutter pub run build_runner build --delete-conflicting-outputs")
     sh("flutter build apk --release")
   end
 end
