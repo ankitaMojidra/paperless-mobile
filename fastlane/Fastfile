@@ -3,9 +3,7 @@ default_platform(:android)
 platform :android do
   desc "Build unsigned release APK"
   lane :build_unsigned_apk do
-    gradle(
-      task: "assembleRelease",
-      project_dir: "android/"
-    )
+    sh("flutter pub get")
+    sh("flutter build apk --release")
   end
 end
