@@ -20,12 +20,10 @@ jobs:
           distribution: temurin
           java-version: '11'
 
-      - name: Set up Android SDK (prebuilt action)
-        uses: reactivecircus/android-emulator-runner@v2
+      - name: Set up Android SDK
+        uses: r0adkll/setup-android@v2
         with:
           api-level: 33
-          arch: x86_64
-          target: default
           build-tools: 33.0.2
 
       - name: Set up Flutter (prebuilt action)
