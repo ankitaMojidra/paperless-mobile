@@ -38,9 +38,7 @@ jobs:
           channel: stable
 
       - name: Run Fastlane lane (build unsigned APK)
-        uses: maierj/fastlane-action@v3.1.0
-        with:
-          lane: android build_unsigned_apk
+        run: cd fastlane && fastlane android build_unsigned_apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
