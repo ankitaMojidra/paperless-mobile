@@ -14,57 +14,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set Android SDK root
-        run: echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> $GITHUB_ENV
-
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '11'
 
-      - name: Create Android SDK directory
-        run: |
-          mkdir -p "$ANDROID_SDK_ROOT"
+      - name: Set up Android SDK (prebuilt action)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          arch: x86_64
+          target: default
+          build-tools: 33.0.2
 
-      - name: Install Android command-line tools and SDK packages
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y wget unzip
-          # download command line tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdline.zip
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-          unzip -q /tmp/cmdline.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-          # move to 'latest' folder expected by tools
-          if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" ]; then
-            mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest || true
-          fi
-          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-          # disable pipefail for this command to avoid `yes` being killed reporting a broken pipe
-          set +o pipefail
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
-          set -o pipefail
-        shell: bash
-
-      - name: Add Android SDK tools to PATH
-        run: |
-          echo "${ANDROID_SDK_ROOT}/platform-tools" >> $GITHUB_PATH
-          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "${ANDROID_SDK_ROOT}/emulator" >> $GITHUB_PATH
-
-      - name: Install Flutter (stable)
-        run: |
-          wget https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_latest.tar.xz -O /tmp/flutter.tar.xz
-          tar xf /tmp/flutter.tar.xz -C $HOME
-          echo "$HOME/flutter/bin" >> $GITHUB_PATH
-          echo "$HOME/flutter/bin/cache/dart-sdk/bin" >> $GITHUB_PATH
-
-      - name: Verify Flutter
-        run: flutter --version
-
-      - name: Accept Android licenses
-        run: |
-          yes | flutter doctor --android-licenses
+      - name: Set up Flutter (prebuilt action)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
 
       - name: Install Flutter dependencies
         run: flutter pub get
