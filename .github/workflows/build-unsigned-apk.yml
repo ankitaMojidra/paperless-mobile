@@ -1,0 +1,75 @@
+name: Build unsigned APK
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  build:
+    name: Build unsigned APK
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Create Android SDK directory
+        run: |
+          mkdir -p "$ANDROID_SDK_ROOT"
+
+      - name: Install Android command-line tools and SDK packages
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y wget unzip
+          # download command line tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdline.zip
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          unzip -q /tmp/cmdline.zip -d $ANDROID_SDK_ROOT/cmdline-tools
+          # move to 'latest' folder expected by tools
+          if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" ]; then
+            mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest || true
+          fi
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+        shell: bash
+
+      - name: Add Android SDK tools to PATH
+        run: |
+          echo "${ANDROID_SDK_ROOT}/platform-tools" >> $GITHUB_PATH
+          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "${ANDROID_SDK_ROOT}/emulator" >> $GITHUB_PATH
+
+      - name: Install Flutter (stable)
+        run: |
+          wget https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_latest.tar.xz -O /tmp/flutter.tar.xz
+          tar xf /tmp/flutter.tar.xz -C $HOME
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+          echo "$HOME/flutter/bin/cache/dart-sdk/bin" >> $GITHUB_PATH
+
+      - name: Verify Flutter
+        run: flutter --version
+
+      - name: Accept Android licenses
+        run: |
+          yes | flutter doctor --android-licenses
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Build unsigned release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
