@@ -1,0 +1,9 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build unsigned release APK"
+  lane :build_unsigned_apk do
+    sh("flutter pub get")
+    sh("flutter build apk --release")
+  end
+end
